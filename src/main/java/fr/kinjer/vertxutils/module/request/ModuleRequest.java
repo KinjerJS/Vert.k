@@ -1,21 +1,15 @@
 package fr.kinjer.vertxutils.module.request;
 
-import fr.kinjer.vertxutils.request.MethodHttp;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface SubRequest {
+@Target(ElementType.TYPE)
+public @interface ModuleRequest {
 
     String value();
-
-    String parent() default "";
-
-    MethodHttp method() default MethodHttp.GET;
 
 }

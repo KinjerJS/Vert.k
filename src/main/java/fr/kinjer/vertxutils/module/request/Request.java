@@ -13,6 +13,4 @@ public @interface Request {
 
     MethodHttp method() default MethodHttp.GET;
 
-    String value();
-
 }

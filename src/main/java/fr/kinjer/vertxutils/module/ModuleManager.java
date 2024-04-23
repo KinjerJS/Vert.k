@@ -1,5 +1,6 @@
 package fr.kinjer.vertxutils.module;
 
+import fr.kinjer.vertxutils.module.request.ModuleRequest;
 import fr.kinjer.vertxutils.module.request.Request;
 
 import java.util.ArrayList;
@@ -22,7 +23,9 @@ public class ModuleManager<T> {
 
     public T getModule(String path) {
         for (T module : modules) {
-            if (module.getClass().getAnnotation(Request.class).value().equals(path)) {
+            Class<?> classModule = module.getClass();
+            if (classModule.isAnnotationPresent(ModuleRequest.class)
+                    && classModule.getAnnotation(ModuleRequest.class).value().equals(path)) {
                 return module;
             }
         }
