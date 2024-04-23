@@ -3,7 +3,6 @@ package fr.kinjer.vertxutils.module;
 import fr.kinjer.vertxutils.VertxServer;
 import fr.kinjer.vertxutils.session.IWebSession;
 import fr.kinjer.vertxutils.manager.WebSessionManager;
-import fr.kinjer.vertxutils.module.request.Request;
 import fr.kinjer.vertxutils.module.request.Response;
 import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.ErrorUtil;

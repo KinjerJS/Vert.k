@@ -2,8 +2,6 @@ package fr.kinjer.vertxutils;
 
 import fr.kinjer.vertxutils.manager.VertxManager;
 import fr.kinjer.vertxutils.module.ModuleManager;
-import fr.kinjer.vertxutils.module.request.IRequest;
-import fr.kinjer.vertxutils.module.request.Response;
 import fr.kinjer.vertxutils.server.DefaultVerticle;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
@@ -11,13 +9,13 @@ import io.vertx.core.Vertx;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VertxServer<R extends IRequest<Re>, Re extends Response> {
+public class VertxServer<T> {
 
     private final int port;
     protected final String apiPath;
     protected final Vertx vertx;
 
-    private final ModuleManager<R, Re> moduleManager;
+    private final ModuleManager moduleManager;
     private final List<VertxManager> managers;
 
     public VertxServer(int port, String apiPath) {
@@ -26,19 +24,19 @@ public class VertxServer<R extends IRequest<Re>, Re extends Response> {
         this.vertx = Vertx.vertx();
         this.managers = new ArrayList<>();
 
-        this.moduleManager = new ModuleManager<R, Re>();
+        this.moduleManager = new ModuleManager();
     }
 
-    public VertxServer<R, Re> deployVerticle(Verticle verticle) {
+    public VertxServer<T> deployVerticle(Verticle verticle) {
         this.vertx.deployVerticle(verticle);
         return this;
     }
 
-    public VertxServer<R, Re> deployDefaultVerticle() {
+    public VertxServer<T> deployDefaultVerticle() {
         return this.deployVerticle(new DefaultVerticle<>(this));
     }
 
-    public ModuleManager<R, Re> getModuleManager() {
+    public ModuleManager<T> getModuleManager() {
         return moduleManager;
     }
 
@@ -58,7 +56,7 @@ public class VertxServer<R extends IRequest<Re>, Re extends Response> {
         return managers;
     }
 
-    public VertxServer<R, Re> addManager(VertxManager manager) {
+    public VertxServer addManager(VertxManager manager) {
         this.managers.add(manager);
         return this;
     }

@@ -1,34 +1,31 @@
 package fr.kinjer.vertxutils.module;
 
-import fr.kinjer.vertxutils.VertxServer;
-import fr.kinjer.vertxutils.module.request.IRequest;
-import fr.kinjer.vertxutils.module.request.Response;
+import fr.kinjer.vertxutils.module.request.Request;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModuleManager<R extends IRequest<Re>, Re extends Response> {
+public class ModuleManager<T> {
 
-    private final List<R> modules = new ArrayList<>();
+    private final List<T> modules = new ArrayList<>();
 
     public ModuleManager() {
     }
 
-    public void createModule(R module) {
+    public void createModule(T module) {
         this.modules.add(module);
     }
 
-    public List<R> getModules() {
+    public List<T> getModules() {
         return modules;
     }
 
-    public R getModule(String modulePath) {
-        return this.getModule(modulePath, null);
+    public T getModule(String path) {
+        for (T module : modules) {
+            if (module.getClass().getAnnotation(Request.class).value().equals(path)) {
+                return module;
+            }
+        }
+        return null;
     }
-
-    public R getModule(String modulePath, R defaultModule) {
-        return this.modules.stream().filter(requestModule -> requestModule.getPath().equals(modulePath))
-                .findFirst().orElse(defaultModule);
-    }
-
 }
