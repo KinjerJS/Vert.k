@@ -8,6 +8,7 @@ allprojects {
 
     group 'fr.kinjer.vertxutils'
     version '2.0.0-SNAPSHOT'
+    [compileJava, compileTestJava]*.options*.compilerArgs = ['-parameters']
 
     java {
         withSourcesJar()

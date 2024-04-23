@@ -24,7 +24,7 @@ public class VertxServer<T> {
         this.vertx = Vertx.vertx();
         this.managers = new ArrayList<>();
 
-        this.moduleManager = new ModuleManager();
+        this.moduleManager = new ModuleManager<>();
     }
 
     public VertxServer<T> deployVerticle(Verticle verticle) {

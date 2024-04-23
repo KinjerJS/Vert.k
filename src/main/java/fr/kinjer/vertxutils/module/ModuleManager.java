@@ -24,6 +24,7 @@ public class ModuleManager<T> {
     public T getModule(String path) {
         for (T module : modules) {
             Class<?> classModule = module.getClass();
+
             if (classModule.isAnnotationPresent(ModuleRequest.class)
                     && classModule.getAnnotation(ModuleRequest.class).value().equals(path)) {
                 return module;

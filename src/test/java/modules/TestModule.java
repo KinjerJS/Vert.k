@@ -9,8 +9,8 @@ import fr.kinjer.vertxutils.module.request.ModuleRequest;
 public class TestModule {
 
     @Request
-    public String onRequest(Response response) throws Exception {
-        return "Hello World!";
+    public String onRequest(Response response, String id) throws Exception {
+        return "Hello World! " + id;
     }
 
     @SubRequest(value = "autre")

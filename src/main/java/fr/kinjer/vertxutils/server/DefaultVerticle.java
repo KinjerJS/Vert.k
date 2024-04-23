@@ -7,12 +7,15 @@ import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.ErrorUtil;
 import fr.kinjer.vertxutils.utils.HttpVertxException;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVerticle {
@@ -44,6 +47,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
     protected void preInit(HttpServer server) {}
 
     private void requestHandler(HttpServerRequest request) {
+        System.out.println("Request");
         MethodHttp method = MethodHttp.fromHttpMethod(request.method());
         String[] paths = (request.path().startsWith(this.vertxServer.getApiPath())
                 ? request.path().substring(this.vertxServer.getApiPath().length())
@@ -53,22 +57,28 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
 
         if (requestModule != null) {
             try {
-                for (Method met : request.getClass().getDeclaredMethods()) {
-                    if(met.isAnnotationPresent(Request.class) && met.getAnnotation(Request.class).method() == method) {
+                for (Method met : requestModule.getClass().getDeclaredMethods()) {
+                    System.out.println(met.getName());
+                    if(met.isAnnotationPresent(Request.class)
+                            && met.getAnnotation(Request.class).method() == method) {
                         request.bodyHandler(buffer -> {
                             try {
-                                Response response = Response.create(request.params(), new JsonObject(), request.headers(), request.response());
+                                Response response = Response.create(request.params(), buffer.length() > 0 ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
                                 List<Object> params = new ArrayList<>();
-                                for (Class<?> parameterType : met.getParameterTypes()) {
-                                    if (parameterType == Response.class) {
-                                        params.add(request);
+                                System.out.println(Arrays.toString(met.getParameterTypes()));
+                                for (Parameter parameterType : met.getParameters()) {
+                                    if (parameterType.getType() == Response.class) {
+                                        params.add(response);
                                         continue;
                                     }
-                                    if(request.params().contains(parameterType.getName())) {
+                                    System.out.println("qsd: " + parameterType.getName());
+                                    System.out.println(request.params());
+                                    if(request.params().contains(parameterType.getName().toLowerCase())) {
                                         params.add(request.getParam(parameterType.getName()));
                                     }
                                 }
-                                String result = met.invoke(params.toArray()).toString();
+                                System.out.println(params);
+                                String result = met.invoke(requestModule, params.toArray()).toString();
                                 response.response().setStatusCode(200).end(result);
                                 return;
                             } catch (HttpVertxException e) {
@@ -79,6 +89,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
                                 request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
                             }
                         });
+                        return;
                     }
                 }
             } catch (Exception e) {
