@@ -4,6 +4,7 @@ import fr.kinjer.vertxutils.VertxServer;
 import fr.kinjer.vertxutils.module.request.Request;
 import fr.kinjer.vertxutils.module.request.Response;
 import fr.kinjer.vertxutils.server.DefaultVerticle;
+import modules.SubTestModule;
 import modules.TestModule;
 
 public class Main {
@@ -19,6 +20,7 @@ public class Main {
 //            this.deployVerticle(new TestVerticle());
             this.deployVerticle(new DefaultVerticle<>(this));
             this.getModuleManager().createModule(new TestModule());
+            this.getModuleManager().createModule(new SubTestModule());
 
         }
 

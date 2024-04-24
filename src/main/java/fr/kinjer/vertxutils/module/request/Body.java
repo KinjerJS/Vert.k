@@ -10,9 +10,9 @@ import java.lang.annotation.Target;
 public @interface Body {
 
     /**
-     * The real key name get from a bodu in jso
+     * The real key name get from a body in jso
      * @return
      */
-    String value();
+    String value() default "";
 
 }

@@ -14,9 +14,6 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
-import java.beans.PropertyEditor;
-import java.beans.PropertyEditorManager;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -60,45 +57,16 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
 
         if (requestModule != null) {
             try {
-                for (Method met : requestModule.getClass().getDeclaredMethods()) {
-                    System.out.println(met.getName());
-                    if(met.isAnnotationPresent(Request.class)
-                            && met.getAnnotation(Request.class).method() == method
-//                            || met.isAnnotationPresent(SubRequest.class) && met.getAnnotation(SubRequest.class).method() == method
-                    ) {
-                        request.bodyHandler(buffer -> {
-                            try {
-                                List<Object> params = new ArrayList<>();
-                                System.out.println(Arrays.toString(met.getParameterTypes()));
-                                for (Parameter parameterType : met.getParameters()) {
-                                    if (parameterType.getType() == Response.class) {
-                                        params.add(Response.create(request.params(), buffer.length() > 0
-                                                ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response()));
-                                        continue;
-                                    }
-                                    if(parameterType.isAnnotationPresent(Param.class) || parameterType.isAnnotationPresent(Body.class)) {
-                                        params.add(ConvertorPrimitive.convert(parameterType.getType(), this.fillParameters(method, parameterType, buffer, request.params())));
-                                    }
-                                    params.add(ConvertorPrimitive.convert(parameterType.getType(), request.getParam(parameterType.getName())));
-                                }
-                                System.out.println(params);
-                                String result = met.invoke(requestModule, params.toArray()).toString();
-                                request.response().setStatusCode(200).end(result);
-                                return;
-                            } catch (HttpVertxException e) {
-                                int code = e.getCode();
-                                request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
-                            } catch (ClassCastException e) {
-                                e.printStackTrace();
-                                request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
-                            }
-                        });
-                        return;
+                //TODO Cant work, need to find a way to get the subrequest with "root/subrequest/subsubrequest/sameNameSubRequest"
+                Class<?> requestModuleClass = requestModule.getClass();
+                if (requestModuleClass.isAnnotationPresent(SubRequest.class)) {
+                    String subRequest = paths.length > 1 ? paths[1] : null;
+                    SubRequest subRequestAnnotation = requestModuleClass.getAnnotation(SubRequest.class);
+                    if (subRequestAnnotation.method() == method && subRequestAnnotation.value().equals(subRequest)) {
+                        this.executeRequest(request, requestModule, paths, subRequest, method);
                     }
                 }
+                this.executeRequest(request, requestModule, paths, paths.length > 1 ? paths[1] : null, method);
             } catch (Exception e) {
                 e.printStackTrace();
                 request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
@@ -109,11 +77,87 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
 
     }
 
-    private String fillParameters(MethodHttp method, Parameter parameterType, Buffer body, MultiMap param) {
-        if (method == MethodHttp.POST || parameterType.isAnnotationPresent(Body.class)) {
-            return body.toJsonObject().getString(parameterType.getName());
+    private void executeRequest(HttpServerRequest request, Object requestModule, String[] paths, String subRequest, MethodHttp method) {
+        for (Method met : requestModule.getClass().getDeclaredMethods()) {
+            System.out.println(met.getName());
+            if(this.isRequest(met, paths, method) || this.isSubRequest(met, subRequest, method)) {
+                request.bodyHandler(buffer -> {
+                    try {
+                        List<Object> params = this.getBindValues(met, request, buffer);
+                        String result = met.invoke(requestModule, params.toArray()).toString();
+                        request.response().setStatusCode(200).end(result);
+                    } catch (HttpVertxException e) {
+                        int code = e.getCode();
+                        request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
+                    } catch (ClassCastException | NumberFormatException e) {
+                        e.printStackTrace();
+                        request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
+                    }
+                });
+                return;
+            }
         }
-        return param.get(parameterType.getName());
+    }
+
+    private boolean isSubRequest(Method met, String subRequest, MethodHttp method) {
+        return met.isAnnotationPresent(SubRequest.class)
+                && met.getAnnotation(SubRequest.class).method() == method
+                && met.getAnnotation(SubRequest.class).value().equals(subRequest);
+    }
+
+    private boolean isRequest(Method met, String[] paths, MethodHttp method) {
+        return paths.length == 1 && met.isAnnotationPresent(Request.class)
+                && met.getAnnotation(Request.class).method() == method;
+    }
+
+    private List<Object> getBindValues(Method met, HttpServerRequest request, Buffer buffer) {
+        List<Object> params = new ArrayList<>();
+        for (Parameter parameterType : met.getParameters()) {
+            Class<?> classType = parameterType.getType();
+            Object valueTypeClass = this.getTypedValue(classType, request, buffer);
+            if (valueTypeClass != null) {
+                params.add(valueTypeClass);
+                continue;
+            }
+            params.add(ConvertorPrimitive.convert(classType, this.filterParam(parameterType, buffer, request.params())));
+        }
+        return params;
+    }
+
+    private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
+        if (classType == Response.class) {
+            return Response.create(request.params(), buffer.length() > 0
+                    ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
+        }
+        if (classType == Buffer.class) {
+            return buffer;
+        }
+        if (classType == MultiMap.class) {
+            return request.params();
+        }
+        if (classType == JsonObject.class) {
+            return buffer.length() > 0 ? buffer.toJsonObject() : new JsonObject();
+        }
+        return null;
+    }
+
+    private String filterParam(Parameter parameterType, Buffer body, MultiMap param) {
+        if (parameterType.isAnnotationPresent(Body.class)) {
+            Body paramBody = parameterType.getAnnotation(Body.class);
+            if (body.length() > 0) {
+                return body.toJsonObject().getString(
+                        !paramBody.value().isEmpty()
+                        ? paramBody.value()
+                        : parameterType.getName());
+            }
+        }
+        Param paramAKey = parameterType.getAnnotation(Param.class);
+        String paramKey = parameterType.isAnnotationPresent(Param.class)
+                && !paramAKey.value().isEmpty() ? paramAKey.value() : parameterType.getName();
+        return param.get(paramKey);
     }
 
 //    private void checkRequest(String[] paths, R requestModule, HttpServerRequest httpServerRequest, Re response) {
