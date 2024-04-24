@@ -1,16 +1,13 @@
 package modules;
 
-import fr.kinjer.vertxutils.module.request.Request;
-import fr.kinjer.vertxutils.module.request.Response;
-import fr.kinjer.vertxutils.module.request.SubRequest;
-import fr.kinjer.vertxutils.module.request.ModuleRequest;
+import fr.kinjer.vertxutils.module.request.*;
 
 @ModuleRequest("test")
 public class TestModule {
 
-    @Request
-    public String onRequest(Response response, String id) throws Exception {
-        return "Hello World! " + id;
+    @Request()
+    public String onRequest(String id, @Body("toto") Integer kaka) throws Exception {
+        return "Hello World! " + id + " " + kaka;
     }
 
     @SubRequest(value = "autre")

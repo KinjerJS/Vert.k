@@ -1,18 +1,21 @@
 package fr.kinjer.vertxutils.server;
 
 import fr.kinjer.vertxutils.VertxServer;
-import fr.kinjer.vertxutils.module.request.Request;
-import fr.kinjer.vertxutils.module.request.Response;
+import fr.kinjer.vertxutils.module.request.*;
 import fr.kinjer.vertxutils.request.MethodHttp;
+import fr.kinjer.vertxutils.utils.ConvertorPrimitive;
 import fr.kinjer.vertxutils.utils.ErrorUtil;
 import fr.kinjer.vertxutils.utils.HttpVertxException;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
+import java.beans.PropertyEditor;
+import java.beans.PropertyEditorManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -60,30 +63,34 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
                 for (Method met : requestModule.getClass().getDeclaredMethods()) {
                     System.out.println(met.getName());
                     if(met.isAnnotationPresent(Request.class)
-                            && met.getAnnotation(Request.class).method() == method) {
+                            && met.getAnnotation(Request.class).method() == method
+//                            || met.isAnnotationPresent(SubRequest.class) && met.getAnnotation(SubRequest.class).method() == method
+                    ) {
                         request.bodyHandler(buffer -> {
                             try {
-                                Response response = Response.create(request.params(), buffer.length() > 0 ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
                                 List<Object> params = new ArrayList<>();
                                 System.out.println(Arrays.toString(met.getParameterTypes()));
                                 for (Parameter parameterType : met.getParameters()) {
                                     if (parameterType.getType() == Response.class) {
-                                        params.add(response);
+                                        params.add(Response.create(request.params(), buffer.length() > 0
+                                                ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response()));
                                         continue;
                                     }
-                                    System.out.println("qsd: " + parameterType.getName());
-                                    System.out.println(request.params());
-                                    if(request.params().contains(parameterType.getName().toLowerCase())) {
-                                        params.add(request.getParam(parameterType.getName()));
+                                    if(parameterType.isAnnotationPresent(Param.class) || parameterType.isAnnotationPresent(Body.class)) {
+                                        params.add(ConvertorPrimitive.convert(parameterType.getType(), this.fillParameters(method, parameterType, buffer, request.params())));
                                     }
+                                    params.add(ConvertorPrimitive.convert(parameterType.getType(), request.getParam(parameterType.getName())));
                                 }
                                 System.out.println(params);
                                 String result = met.invoke(requestModule, params.toArray()).toString();
-                                response.response().setStatusCode(200).end(result);
+                                request.response().setStatusCode(200).end(result);
                                 return;
                             } catch (HttpVertxException e) {
                                 int code = e.getCode();
                                 request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
+                            } catch (ClassCastException e) {
+                                e.printStackTrace();
+                                request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
@@ -100,6 +107,13 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
         }
         request.response().setStatusCode(404).end(ErrorUtil.e404("Path not found"));
 
+    }
+
+    private String fillParameters(MethodHttp method, Parameter parameterType, Buffer body, MultiMap param) {
+        if (method == MethodHttp.POST || parameterType.isAnnotationPresent(Body.class)) {
+            return body.toJsonObject().getString(parameterType.getName());
+        }
+        return param.get(parameterType.getName());
     }
 
 //    private void checkRequest(String[] paths, R requestModule, HttpServerRequest httpServerRequest, Re response) {
