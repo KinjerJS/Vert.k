@@ -7,9 +7,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-
+/**
+ * If the method is annotated with this annotation,
+ * it will be called in priority and cancel the call to a class which is annotated by the same value.
+ */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface SubRequest {
 
     String value();

@@ -1,8 +1,10 @@
 package fr.kinjer.vertxutils.module;
 
-import fr.kinjer.vertxutils.module.request.ModuleRequest;
-import fr.kinjer.vertxutils.module.request.Request;
+import fr.kinjer.vertxutils.module.request.*;
+import fr.kinjer.vertxutils.request.MethodHttp;
+import fr.kinjer.vertxutils.utils.Pair;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,22 +16,69 @@ public class ModuleManager<T> {
     }
 
     public void createModule(T module) {
-        this.modules.add(module);
+        if (module.getClass().isAnnotationPresent(ModuleRequest.class)) {
+            this.modules.add(module);
+        }
     }
 
     public List<T> getModules() {
         return modules;
     }
 
-    public T getModule(String path) {
-        for (T module : modules) {
+    public Pair<Object, Method> getMethodModule(MethodHttp method, String[] paths) {
+        for (T module : this.modules) {
             Class<?> classModule = module.getClass();
-
-            if (classModule.isAnnotationPresent(ModuleRequest.class)
-                    && classModule.getAnnotation(ModuleRequest.class).value().equals(path)) {
-                return module;
+            ModuleRequest moduleRequest = classModule.getAnnotation(ModuleRequest.class);
+            if (moduleRequest == null) continue;
+            String[] modulePath = this.checkModulePath(moduleRequest);
+            int i;
+            for (i = 0; i < modulePath.length; i++) {
+                if (!modulePath[i].equals(paths[i])) {
+                    break;
+                }
+                if (i+1 >= paths.length) {
+                    Method met = getRequestMethod(classModule, paths[i], method);
+                    if (met != null) {
+                        return new Pair<>(module, met);
+                    }
+                    return null;
+                }
+            }
+            for (Method met : classModule.getDeclaredMethods()) {
+                if(ModuleManager.isSubRequest(met, paths[i], method)) {
+                    return new Pair<>(module, met);
+                }
             }
         }
         return null;
+    }
+
+    private static Method getRequestMethod(Class<?> classModule, String path, MethodHttp method) {
+        for (Method met : classModule.getDeclaredMethods()) {
+            if(ModuleManager.isRequest(met, method)) {
+                return met;
+            }
+        }
+        return null;
+    }
+
+    public static boolean isSubRequest(Method met, String subRequest, MethodHttp method) {
+        return met.isAnnotationPresent(SubRequest.class)
+                && met.getAnnotation(SubRequest.class).method() == method
+                && met.getAnnotation(SubRequest.class).value().equals(subRequest);
+    }
+
+    public static boolean isRequest(Method met, MethodHttp method) {
+        return met.isAnnotationPresent(Request.class)
+                && met.getAnnotation(Request.class).method() == method;
+    }
+
+    private String[] checkModulePath(ModuleRequest moduleRequest) {
+        String firstArg = moduleRequest.value()[0];
+        if (firstArg.startsWith("/"))
+            firstArg = firstArg.substring(1);
+
+        return firstArg.contains("/")
+                ? firstArg.split("/") : moduleRequest.value();
     }
 }

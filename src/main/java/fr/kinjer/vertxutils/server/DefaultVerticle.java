@@ -1,11 +1,13 @@
 package fr.kinjer.vertxutils.server;
 
 import fr.kinjer.vertxutils.VertxServer;
+import fr.kinjer.vertxutils.module.ModuleManager;
 import fr.kinjer.vertxutils.module.request.*;
 import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.ConvertorPrimitive;
 import fr.kinjer.vertxutils.utils.ErrorUtil;
 import fr.kinjer.vertxutils.utils.HttpVertxException;
+import fr.kinjer.vertxutils.utils.Pair;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
@@ -53,20 +55,12 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
                 ? request.path().substring(this.vertxServer.getApiPath().length())
                 : "").split("/");
 
-        Object requestModule = this.vertxServer.getModuleManager().getModule(paths[0]);
+        Pair<Object, Method> requestModule = this.vertxServer.getModuleManager().getMethodModule(method, paths);
 
         if (requestModule != null) {
             try {
-                //TODO Cant work, need to find a way to get the subrequest with "root/subrequest/subsubrequest/sameNameSubRequest"
-                Class<?> requestModuleClass = requestModule.getClass();
-                if (requestModuleClass.isAnnotationPresent(SubRequest.class)) {
-                    String subRequest = paths.length > 1 ? paths[1] : null;
-                    SubRequest subRequestAnnotation = requestModuleClass.getAnnotation(SubRequest.class);
-                    if (subRequestAnnotation.method() == method && subRequestAnnotation.value().equals(subRequest)) {
-                        this.executeRequest(request, requestModule, paths, subRequest, method);
-                    }
-                }
-                this.executeRequest(request, requestModule, paths, paths.length > 1 ? paths[1] : null, method);
+                this.executeRequest(request, requestModule.getKey(), requestModule.getValue());
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
                 request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
@@ -77,40 +71,23 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
 
     }
 
-    private void executeRequest(HttpServerRequest request, Object requestModule, String[] paths, String subRequest, MethodHttp method) {
-        for (Method met : requestModule.getClass().getDeclaredMethods()) {
-            System.out.println(met.getName());
-            if(this.isRequest(met, paths, method) || this.isSubRequest(met, subRequest, method)) {
-                request.bodyHandler(buffer -> {
-                    try {
-                        List<Object> params = this.getBindValues(met, request, buffer);
-                        String result = met.invoke(requestModule, params.toArray()).toString();
-                        request.response().setStatusCode(200).end(result);
-                    } catch (HttpVertxException e) {
-                        int code = e.getCode();
-                        request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
-                    } catch (ClassCastException | NumberFormatException e) {
-                        e.printStackTrace();
-                        request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
-                    }
-                });
-                return;
+    private void executeRequest(HttpServerRequest request, Object requestModule, Method methodRequest) {
+        request.bodyHandler(buffer -> {
+            try {
+                List<Object> params = this.getBindValues(methodRequest, request, buffer);
+                String result = methodRequest.invoke(requestModule, params.toArray()).toString();
+                request.response().setStatusCode(200).end(result);
+            } catch (HttpVertxException e) {
+                int code = e.getCode();
+                request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
+            } catch (ClassCastException | NumberFormatException e) {
+                e.printStackTrace();
+                request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
             }
-        }
-    }
-
-    private boolean isSubRequest(Method met, String subRequest, MethodHttp method) {
-        return met.isAnnotationPresent(SubRequest.class)
-                && met.getAnnotation(SubRequest.class).method() == method
-                && met.getAnnotation(SubRequest.class).value().equals(subRequest);
-    }
-
-    private boolean isRequest(Method met, String[] paths, MethodHttp method) {
-        return paths.length == 1 && met.isAnnotationPresent(Request.class)
-                && met.getAnnotation(Request.class).method() == method;
+        });
     }
 
     private List<Object> getBindValues(Method met, HttpServerRequest request, Buffer buffer) {

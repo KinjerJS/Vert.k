@@ -12,7 +12,7 @@ public class TestModule {
         return "Hello Wsdqorld! " + id + " " + kaka;
     }
 
-    @SubRequest("autre")
+    @SubRequest("auqsdtsre")
     public String onAutre() {
         return "Attt";
     }
