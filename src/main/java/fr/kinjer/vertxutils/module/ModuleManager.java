@@ -25,7 +25,7 @@ public class ModuleManager<T> {
         return modules;
     }
 
-    public Pair<Object, Method> getMethodModule(MethodHttp method, String[] paths) {
+    public Pair<Object, Method> getModuleMethod(MethodHttp method, String[] paths) {
         for (T module : this.modules) {
             Class<?> classModule = module.getClass();
             ModuleRequest moduleRequest = classModule.getAnnotation(ModuleRequest.class);
@@ -33,21 +33,26 @@ public class ModuleManager<T> {
             String[] modulePath = this.checkModulePath(moduleRequest);
             int i;
             for (i = 0; i < modulePath.length; i++) {
-                if (!modulePath[i].equals(paths[i])) {
+                if (!modulePath[i].equals(paths[i]))
                     break;
-                }
                 if (i+1 >= paths.length) {
                     Method met = getRequestMethod(classModule, paths[i], method);
-                    if (met != null) {
+                    if (met != null)
                         return new Pair<>(module, met);
-                    }
                     return null;
                 }
             }
-            for (Method met : classModule.getDeclaredMethods()) {
-                if(ModuleManager.isSubRequest(met, paths[i], method)) {
-                    return new Pair<>(module, met);
-                }
+            Method met = getModuleContainsSubRequest(classModule, method, paths[i]);
+            if (met != null)
+                return new Pair<>(module, met);
+        }
+        return null;
+    }
+
+    private static Method getModuleContainsSubRequest(Class<?> classModule, MethodHttp method, String path) {
+        for (Method met : classModule.getDeclaredMethods()) {
+            if(ModuleManager.isSubRequest(met, path, method)) {
+                return met;
             }
         }
         return null;

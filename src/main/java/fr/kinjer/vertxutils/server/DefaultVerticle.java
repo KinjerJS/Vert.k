@@ -1,7 +1,6 @@
 package fr.kinjer.vertxutils.server;
 
 import fr.kinjer.vertxutils.VertxServer;
-import fr.kinjer.vertxutils.module.ModuleManager;
 import fr.kinjer.vertxutils.module.request.*;
 import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.ConvertorPrimitive;
@@ -55,7 +54,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
                 ? request.path().substring(this.vertxServer.getApiPath().length())
                 : "").split("/");
 
-        Pair<Object, Method> requestModule = this.vertxServer.getModuleManager().getMethodModule(method, paths);
+        Pair<Object, Method> requestModule = this.vertxServer.getModuleManager().getModuleMethod(method, paths);
 
         if (requestModule != null) {
             try {
