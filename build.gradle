@@ -32,7 +32,7 @@ allprojects {
                     username System.getenv('GITHUB_USERNAME')
                     password System.getenv('GITHUB_TOKEN')
                 }
-                name = "Astro_maven"
+                name = "Vert.k_maven"
                 url = "https://maven.pkg.github.com/KinjerJS/Vert.k"
             }
         }
