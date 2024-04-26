@@ -49,12 +49,11 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
 
     private void requestHandler(HttpServerRequest request) {
         System.out.println("Request");
-        MethodHttp method = MethodHttp.fromHttpMethod(request.method());
         String[] paths = (request.path().startsWith(this.vertxServer.getApiPath())
                 ? request.path().substring(this.vertxServer.getApiPath().length())
                 : "").split("/");
 
-        Pair<Object, Method> requestModule = this.vertxServer.getModuleManager().getModuleMethod(method, paths);
+        Pair<Object, Method> requestModule = this.vertxServer.getModuleManager().getModuleMethod(request, paths);
 
         if (requestModule != null) {
             try {
