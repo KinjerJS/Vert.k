@@ -47,7 +47,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
      */
     protected void preInit(HttpServer server) {}
 
-    private void requestHandler(HttpServerRequest request) {
+    protected void requestHandler(HttpServerRequest request) {
         System.out.println("Request");
         String[] paths = (request.path().startsWith(this.vertxServer.getApiPath())
                 ? request.path().substring(this.vertxServer.getApiPath().length())
