@@ -103,7 +103,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
-        if (classType == Response.class) {
+        if (classType.isAssignableFrom(Response.class)) {
             return Response.create(request.params(), buffer.length() > 0
                     ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
         }
