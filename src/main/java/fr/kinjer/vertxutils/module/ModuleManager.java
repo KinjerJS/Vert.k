@@ -19,9 +19,15 @@ public class ModuleManager<M> {
         this.server = server;
     }
 
-    public void createModule(M module) {
+    public void addModule(M module) {
         if (module.getClass().isAnnotationPresent(ModuleRequest.class)) {
             this.modules.add(module);
+        }
+    }
+
+    public void addModules(M... modules) {
+        for (M module : modules) {
+            addModule(module);
         }
     }
 
