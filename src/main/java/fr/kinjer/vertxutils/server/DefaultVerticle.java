@@ -15,6 +15,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -75,15 +76,19 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 List<Object> params = this.getBindValues(methodRequest, request, buffer);
                 String result = methodRequest.invoke(requestModule, params.toArray()).toString();
                 request.response().setStatusCode(200).end(result);
-            } catch (HttpVertxException e) {
-                int code = e.getCode();
-                request.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
-            } catch (ClassCastException | NumberFormatException e) {
-                e.printStackTrace();
-                request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                try {
+                    throw e.getCause();
+                } catch (HttpVertxException ex) {
+                    int code = ex.getCode();
+                    request.response().setStatusCode(code).end(ErrorUtil.e(code, ex.getMessage()));
+                } catch (ClassCastException | NumberFormatException ex) {
+                    ex.printStackTrace();
+                    request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                    request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
+                }
             }
         });
     }
