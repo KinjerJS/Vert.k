@@ -2,6 +2,7 @@ package fr.kinjer.vertxutils.server;
 
 import fr.kinjer.vertxutils.VertxServer;
 import fr.kinjer.vertxutils.module.request.*;
+import fr.kinjer.vertxutils.module.request.value.ParamValue;
 import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.ConvertorPrimitive;
 import fr.kinjer.vertxutils.utils.ErrorUtil;
@@ -107,9 +108,17 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 params.add(valueTypeClass);
                 continue;
             }
-            params.add(ConvertorPrimitive.convert(classType, this.filterParam(parameterType, MethodHttp.fromHttpMethod(request.method()), buffer, request.params())));
+            Pair<String, ParamValue> param = this.filterParam(parameterType, MethodHttp.fromHttpMethod(request.method()), buffer, request.params());
+            params.add(ConvertorPrimitive.convert(classType, param.getKey() != null ? param.getKey() : this.getParamValue(param.getValue())));
         }
         return params;
+    }
+
+    private String getParamValue(ParamValue value) {
+        if (value.booleanValue()) {
+            return String.valueOf(value.booleanValue());
+        }
+        return value.stringValue();
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
@@ -128,20 +137,20 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
         return null;
     }
 
-    private String filterParam(Parameter parameterType, MethodHttp methodHttp, Buffer body, MultiMap param) {
+    private Pair<String, ParamValue> filterParam(Parameter parameterType, MethodHttp methodHttp, Buffer body, MultiMap param) {
         if (parameterType.isAnnotationPresent(Body.class) || methodHttp == MethodHttp.POST) {
             Body paramBody = parameterType.getAnnotation(Body.class);
             if (body.length() > 0) {
-                return body.toJsonObject().getString(
-                        paramBody != null && !paramBody.value().isEmpty()
+                String key = paramBody != null && !paramBody.value().isEmpty()
                         ? paramBody.value()
-                        : parameterType.getName());
+                        : parameterType.getName();
+                return new Pair<>(body.toJsonObject().getString(key), paramBody != null ? paramBody.defaultValue() : null);
             }
         }
         Param paramAKey = parameterType.getAnnotation(Param.class);
         String paramKey = parameterType.isAnnotationPresent(Param.class)
                 && !paramAKey.value().isEmpty() ? paramAKey.value() : parameterType.getName();
-        return param.get(paramKey);
+        return new Pair<>(param.get(paramKey), paramAKey != null ? paramAKey.defaultValue() : null);
     }
 
 //    private void checkRequest(String[] paths, R requestModule, HttpServerRequest httpServerRequest, Re response) {

@@ -8,6 +8,7 @@ import io.vertx.core.http.HttpServerRequest;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ModuleManager<M> {
@@ -42,15 +43,20 @@ public class ModuleManager<M> {
             ModuleRequest moduleRequest = classModule.getAnnotation(ModuleRequest.class);
             if (moduleRequest == null) continue;
             String[] modulePath = this.checkModulePath(moduleRequest);
+            System.out.println("modulePath: " + Arrays.toString(modulePath));
+            System.out.println("modulePath: " + Arrays.toString(paths));
             int i;
             for (i = 0; i < modulePath.length; i++) {
                 if (!modulePath[i].equals(paths[i]))
                     break;
                 if (i+1 >= paths.length) {
+                    if (!Arrays.equals(modulePath, paths))
+                        break;
                     Method met = getRequestMethod(classModule, request, methodHttp);
+                    System.out.println(met);
                     if (met != null)
                         return new Pair<>(module, met);
-                    return null;
+                    break;
                 }
             }
             Method met = getModuleContainsSubRequest(classModule, request, methodHttp, paths[i]);
@@ -90,6 +96,7 @@ public class ModuleManager<M> {
     }
 
     public static boolean isRequest(Method met, MethodHttp method) {
+        String tttt = met.getName();
         return met.isAnnotationPresent(Request.class)
                 && met.getAnnotation(Request.class).method() == method;
     }

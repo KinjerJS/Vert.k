@@ -1,5 +1,7 @@
 package fr.kinjer.vertxutils.module.request;
 
+import fr.kinjer.vertxutils.module.request.value.ParamValue;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,5 +16,7 @@ public @interface Body {
      * @return
      */
     String value() default "";
+
+    ParamValue defaultValue();
 
 }
