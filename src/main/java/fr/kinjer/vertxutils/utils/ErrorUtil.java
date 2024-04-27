@@ -52,7 +52,12 @@ public class ErrorUtil {
         return e(405, message);
     }
 
+    @Deprecated
     public static String e(int code, String message) {
-        return new JsonObject().put("code", code).put("message", message).encode();
+        return e(message);
+    }
+
+    public static String e(String message) {
+        return new JsonObject().put("error", message).encode();
     }
 }
