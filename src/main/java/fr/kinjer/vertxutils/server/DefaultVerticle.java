@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVerticle {
+public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> extends AbstractVerticle {
 
     protected final T vertxServer;
 
@@ -88,6 +88,11 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
         });
     }
 
+    protected R createResponse(HttpServerRequest request, Buffer buffer) {
+        return Response.create(request.params(), buffer.length() > 0
+                ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
+    }
+
     private List<Object> getBindValues(Method met, HttpServerRequest request, Buffer buffer) {
         List<Object> params = new ArrayList<>();
         for (Parameter parameterType : met.getParameters()) {
@@ -103,9 +108,8 @@ public class DefaultVerticle<T extends VertxServer<O>, O> extends AbstractVertic
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
-        if (classType.isAssignableFrom(Response.class)) {
-            return Response.create(request.params(), buffer.length() > 0
-                    ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
+        if (Response.class.isAssignableFrom(classType)) {
+            return this.createResponse(request, buffer);
         }
         if (classType == Buffer.class) {
             return buffer;
