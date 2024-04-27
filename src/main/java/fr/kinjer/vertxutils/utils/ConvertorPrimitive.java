@@ -14,9 +14,14 @@ public class ConvertorPrimitive {
      * @throws NumberFormatException if the string does not contain a parsable number
      */
     public static Object convert(Class<?> targetType, String text) {
-        PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
-        editor.setAsText(text);
-        return editor.getValue();
+        try {
+            PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
+            editor.setAsText(text);
+            return editor.getValue();
+        } catch (Exception e) {
+            System.err.println(targetType.getName() + ":" + text);
+            throw new RuntimeException(e);
+        }
     }
 
 }
