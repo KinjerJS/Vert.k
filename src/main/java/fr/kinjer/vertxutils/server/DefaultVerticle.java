@@ -107,7 +107,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 params.add(valueTypeClass);
                 continue;
             }
-            params.add(ConvertorPrimitive.convert(classType, this.filterParam(parameterType, buffer, request.params())));
+            params.add(ConvertorPrimitive.convert(classType, this.filterParam(parameterType, MethodHttp.fromHttpMethod(request.method()), buffer, request.params())));
         }
         return params;
     }
@@ -128,8 +128,8 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
         return null;
     }
 
-    private String filterParam(Parameter parameterType, Buffer body, MultiMap param) {
-        if (parameterType.isAnnotationPresent(Body.class)) {
+    private String filterParam(Parameter parameterType, MethodHttp methodHttp, Buffer body, MultiMap param) {
+        if (parameterType.isAnnotationPresent(Body.class) || methodHttp == MethodHttp.POST) {
             Body paramBody = parameterType.getAnnotation(Body.class);
             if (body.length() > 0) {
                 return body.toJsonObject().getString(
