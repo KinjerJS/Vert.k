@@ -133,7 +133,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
             Body paramBody = parameterType.getAnnotation(Body.class);
             if (body.length() > 0) {
                 return body.toJsonObject().getString(
-                        !paramBody.value().isEmpty()
+                        paramBody != null && !paramBody.value().isEmpty()
                         ? paramBody.value()
                         : parameterType.getName());
             }
