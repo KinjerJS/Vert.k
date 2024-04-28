@@ -115,9 +115,14 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
     }
 
     private String getParamValue(ParamValue value) {
-        if (value.booleanValue()) {
-            return String.valueOf(value.booleanValue());
-        }
+        if (value == null)
+            return null;
+        System.out.println(value.booleanValue());
+        System.out.println(value.intValue());
+        System.out.println(value.longValue());
+        System.out.println(value.floatValue());
+        System.out.println(value.doubleValue());
+        System.out.println(value.stringValue());
         return value.stringValue();
     }
 
