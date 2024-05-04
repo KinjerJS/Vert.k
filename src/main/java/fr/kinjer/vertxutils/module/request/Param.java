@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface Param {
 
-    String value();
+    String value() default "";
 
-    ParamValue defaultValue();
+    ParamValue defaultValue() default @ParamValue(typeValue = ParamValue.Type.NONE);
 
 }

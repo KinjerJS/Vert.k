@@ -2,16 +2,29 @@ package fr.kinjer.vertxutils.module.request.value;
 
 public @interface ParamValue {
 
-    int intValue();
+    int intValue() default 0;
 
-    long longValue();
+    long longValue() default 0L;
 
-    float floatValue();
+    float floatValue() default 0.0F;
 
-    double doubleValue();
+    double doubleValue() default 0.0D;
 
-    boolean booleanValue();
+    boolean booleanValue() default false;
 
-    String stringValue();
+    String stringValue() default "";
+
+    Type typeValue();
+
+    enum Type {
+        STRING,
+        INTEGER,
+        LONG,
+        FLOAT,
+        DOUBLE,
+        BOOLEAN,
+        NONE
+        ;
+    }
 
 }
