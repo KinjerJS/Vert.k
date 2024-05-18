@@ -1,6 +1,5 @@
 package fr.kinjer.vertxutils;
 
-import fr.kinjer.vertxutils.manager.VertxManager;
 import fr.kinjer.vertxutils.module.ModuleManager;
 import fr.kinjer.vertxutils.module.request.IRequestPermission;
 import fr.kinjer.vertxutils.server.DefaultVerticle;
@@ -17,15 +16,12 @@ public class VertxServer<M> {
     protected final Vertx vertx;
 
     private final ModuleManager<M> moduleManager;
-    private final List<VertxManager> managers;
-    private List<IRequestPermission> requestPermissions;
+    private final List<IRequestPermission> requestPermissions = new ArrayList<>();
 
     public VertxServer(int port, String apiPath) {
         this.port = port;
         this.apiPath = apiPath.endsWith("/") ? apiPath : apiPath + "/";
         this.vertx = Vertx.vertx();
-        this.managers = new ArrayList<>();
-        this.requestPermissions = new ArrayList<>();
 
         this.moduleManager = new ModuleManager<>(this);
     }
@@ -48,6 +44,15 @@ public class VertxServer<M> {
         return moduleManager;
     }
 
+    @SuppressWarnings("unchecked")
+    public void addModules(M... module) {
+        this.moduleManager.addModules(module);
+    }
+
+    public void addModule(M module) {
+        this.moduleManager.addModule(module);
+    }
+
     public int getServerPort() {
         return port;
     }
@@ -58,20 +63,6 @@ public class VertxServer<M> {
 
     public String getApiPath() {
         return apiPath;
-    }
-
-    public List<VertxManager> getManagers() {
-        return managers;
-    }
-
-    public VertxServer<M> addManager(VertxManager manager) {
-        this.managers.add(manager);
-        return this;
-    }
-
-    public VertxManager getManager(String name) {
-        return this.managers.stream().filter(manager -> manager.getName().equals(name)).findFirst()
-                .orElseThrow(() -> new NullPointerException("Manager not found"));
     }
 
     public IRequestPermission getPermission(String value) {

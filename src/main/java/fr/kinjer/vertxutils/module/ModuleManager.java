@@ -30,6 +30,7 @@ public class ModuleManager<M> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void addModules(M... modules) {
         for (M module : modules) {
             addModule(module);
