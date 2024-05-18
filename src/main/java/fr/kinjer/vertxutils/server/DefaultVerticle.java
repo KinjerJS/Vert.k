@@ -15,6 +15,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,6 +24,8 @@ import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> extends AbstractVerticle {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultVerticle.class);
 
     protected final T vertxServer;
 
@@ -31,7 +35,8 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        System.out.println("Starting verticle on port " + this.vertxServer.getServerPort() + " (http://localhost:" + this.vertxServer.getServerPort() + this.vertxServer.getApiPath() + ")");
+        LOGGER.info("Starting verticle on port " + this.vertxServer.getServerPort()
+                + " (http://localhost:" + this.vertxServer.getServerPort() + this.vertxServer.getApiPath() + ")");
 
         HttpServer server = this.vertx.createHttpServer();
 
@@ -50,7 +55,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
     protected void preInit(HttpServer server) {}
 
     protected void requestHandler(HttpServerRequest request) {
-        System.out.println("Request");
+        LOGGER.debug("Request detected.");
         String[] paths = (request.path().startsWith(this.vertxServer.getApiPath())
                 ? request.path().substring(this.vertxServer.getApiPath().length())
                 : "").split("/");

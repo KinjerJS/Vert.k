@@ -5,6 +5,8 @@ import fr.kinjer.vertxutils.module.request.*;
 import fr.kinjer.vertxutils.request.MethodHttp;
 import fr.kinjer.vertxutils.utils.Pair;
 import io.vertx.core.http.HttpServerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -12,6 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ModuleManager<M> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModuleManager.class);
 
     private final List<M> modules = new ArrayList<>();
     private final VertxServer<M> server;
@@ -43,8 +47,8 @@ public class ModuleManager<M> {
             ModuleRequest moduleRequest = classModule.getAnnotation(ModuleRequest.class);
             if (moduleRequest == null) continue;
             String[] modulePath = this.checkModulePath(moduleRequest);
-            System.out.println("modulePath: " + Arrays.toString(modulePath));
-            System.out.println("modulePath: " + Arrays.toString(paths));
+            LOGGER.debug("modulePath: " + Arrays.toString(modulePath));
+            LOGGER.debug("modulePath: " + Arrays.toString(paths));
             int i;
             for (i = 0; i < modulePath.length; i++) {
                 if (!modulePath[i].equals(paths[i]))
@@ -53,7 +57,7 @@ public class ModuleManager<M> {
                     if (!Arrays.equals(modulePath, paths))
                         break;
                     Method met = getRequestMethod(classModule, request, methodHttp);
-                    System.out.println(met);
+                    LOGGER.debug(met + "");
                     if (met != null)
                         return new Pair<>(module, met);
                     break;
@@ -96,7 +100,6 @@ public class ModuleManager<M> {
     }
 
     public static boolean isRequest(Method met, MethodHttp method) {
-        String tttt = met.getName();
         return met.isAnnotationPresent(Request.class)
                 && met.getAnnotation(Request.class).method() == method;
     }
