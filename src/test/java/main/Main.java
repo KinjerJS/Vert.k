@@ -18,9 +18,9 @@ public class Main {
             super(789, "");
 //            this.deployVerticle(new TestVerticle());
             this.deployVerticle(new DefaultVerticle<>(this));
-            this.getModuleManager().addModules(new TestModule());
-            this.getModuleManager().addModules(new SubTestModule());
-            this.getModuleManager().addModules(new SubAutreModule());
+            this.addModules(new TestModule());
+            this.addModules(new SubTestModule());
+            this.addModules(new SubAutreModule());
 
         }
 
