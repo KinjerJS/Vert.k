@@ -13,8 +13,12 @@ public class ConvertorPrimitive {
      * @return
      * @throws NumberFormatException if the string does not contain a parsable number
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static Object convert(Class<?> targetType, String text) {
         try {
+            if (targetType.isEnum()) {
+                return Enum.valueOf((Class<Enum>) targetType, text.toUpperCase());
+            }
             PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
             editor.setAsText(text);
             return editor.getValue();

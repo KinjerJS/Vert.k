@@ -63,32 +63,32 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
-                request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
+                request.response().setStatusCode(500).end(ErrorUtil.e("An error occurred"));
                 return;
             }
         }
-        request.response().setStatusCode(404).end(ErrorUtil.e404("Path not found"));
+        request.response().setStatusCode(404).end(ErrorUtil.e("Path not found"));
 
     }
 
     private void executeRequest(HttpServerRequest request, Object requestModule, Method methodRequest) {
         request.bodyHandler(buffer -> {
             try {
-                List<Object> params = this.getBindValues(methodRequest, request, buffer);
-                String result = methodRequest.invoke(requestModule, params.toArray()).toString();
+                String result = methodRequest.invoke(requestModule, this.getBindValues(methodRequest, request, buffer))
+                        .toString();
                 request.response().setStatusCode(200).end(result);
             } catch (InvocationTargetException | IllegalAccessException e) {
                 try {
                     throw e.getCause();
                 } catch (HttpVertxException ex) {
                     int code = ex.getCode();
-                    request.response().setStatusCode(code).end(ErrorUtil.e(code, ex.getMessage()));
+                    request.response().setStatusCode(code).end(ErrorUtil.e(ex.getMessage()));
                 } catch (ClassCastException | NumberFormatException ex) {
                     ex.printStackTrace();
-                    request.response().setStatusCode(400).end(ErrorUtil.e(400, "BAD_TYPE"));
+                    request.response().setStatusCode(400).end(ErrorUtil.e("BAD_TYPE"));
                 } catch (Throwable ex) {
                     ex.printStackTrace();
-                    request.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
+                    request.response().setStatusCode(500).end(ErrorUtil.e("An error occurred"));
                 }
             }
         });
@@ -99,7 +99,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 ? buffer.toJsonObject() : new JsonObject(), request.headers(), request.response());
     }
 
-    private List<Object> getBindValues(Method met, HttpServerRequest request, Buffer buffer) {
+    private Object[] getBindValues(Method met, HttpServerRequest request, Buffer buffer) {
         List<Object> params = new ArrayList<>();
         for (Parameter parameterType : met.getParameters()) {
             Class<?> classType = parameterType.getType();
@@ -111,19 +111,20 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
             Pair<String, ParamValue> param = this.filterParam(parameterType, MethodHttp.fromHttpMethod(request.method()), buffer, request.params());
             params.add(ConvertorPrimitive.convert(classType, param.getKey() != null ? param.getKey() : this.getParamValue(param.getValue())));
         }
-        return params;
+        return params.toArray();
     }
 
     private String getParamValue(ParamValue value) {
         if (value == null)
             return null;
-        System.out.println(value.booleanValue());
-        System.out.println(value.intValue());
-        System.out.println(value.longValue());
-        System.out.println(value.floatValue());
-        System.out.println(value.doubleValue());
-        System.out.println(value.stringValue());
-        return value.stringValue();
+        return String.valueOf(switch (value.typeValue()) {
+            case INTEGER -> value.intValue();
+            case LONG -> value.longValue();
+            case FLOAT -> value.floatValue();
+            case DOUBLE -> value.doubleValue();
+            case BOOLEAN -> value.booleanValue();
+            default -> value.stringValue();
+        });
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
@@ -139,10 +140,24 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
         if (classType == JsonObject.class) {
             return buffer.length() > 0 ? buffer.toJsonObject() : new JsonObject();
         }
+        if (classType.isEnum()) {
+            return request;
+        }
         return null;
     }
 
+    /**
+     * Return the value by the parameter type and the method http
+     * or if the parameter has {@link Param} or {@link Body} annotation
+     *
+     * @param parameterType The parameter type
+     * @param methodHttp The method http
+     * @param body The body of the request
+     * @param param The parameters of the request
+     * @return The value of the parameter
+     */
     private Pair<String, ParamValue> filterParam(Parameter parameterType, MethodHttp methodHttp, Buffer body, MultiMap param) {
+
         if (parameterType.isAnnotationPresent(Body.class) || methodHttp == MethodHttp.POST) {
             Body paramBody = parameterType.getAnnotation(Body.class);
             if (body.length() > 0) {
@@ -153,8 +168,8 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
             }
         }
         Param paramAKey = parameterType.getAnnotation(Param.class);
-        String paramKey = parameterType.isAnnotationPresent(Param.class)
-                && !paramAKey.value().isEmpty() ? paramAKey.value() : parameterType.getName();
+        String paramKey = paramAKey != null && !paramAKey.value().isEmpty()
+                ? paramAKey.value() : parameterType.getName();
         return new Pair<>(param.get(paramKey), paramAKey != null ? paramAKey.defaultValue() : null);
     }
 
