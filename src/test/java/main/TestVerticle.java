@@ -19,8 +19,6 @@ public class TestVerticle extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         System.out.println("Starting verticle on port " + 788 + " (http://localhost:" + 788 + "/)");
-        Router router = Router.router(this.vertx);
-
         this.vertx.createHttpServer().webSocketHandler(event -> {
             System.out.println(sessions);
             MultiMap headers = event.headers();
