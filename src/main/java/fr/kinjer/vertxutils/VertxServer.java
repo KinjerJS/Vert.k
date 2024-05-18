@@ -16,7 +16,7 @@ public class VertxServer<M> {
     protected final String apiPath;
     protected final Vertx vertx;
 
-    private final ModuleManager moduleManager;
+    private final ModuleManager<M> moduleManager;
     private final List<VertxManager> managers;
     private List<IRequestPermission> requestPermissions;
 
