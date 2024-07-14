@@ -48,7 +48,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
 
     /**
      * This method is called before the server is started. <br>
-     * Register request handlers is before the execution of this method
+     * The register of requests handlers is before the execution of this method
      *
      * @param server The http server
      */
