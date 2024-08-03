@@ -122,14 +122,19 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
     private String getParamValue(ParamValue value) {
         if (value == null)
             return null;
-        return String.valueOf(switch (value.typeValue()) {
-            case INTEGER -> value.intValue();
-            case LONG -> value.longValue();
-            case FLOAT -> value.floatValue();
-            case DOUBLE -> value.doubleValue();
-            case BOOLEAN -> value.booleanValue();
-            default -> value.stringValue();
-        });
+        switch (value.typeValue()) {
+            case INTEGER:
+                return "" + value.intValue();
+            case LONG:
+                return "" + value.longValue();
+            case FLOAT:
+                return "" + value.floatValue();
+            case DOUBLE:
+                return "" + value.doubleValue();
+            case BOOLEAN:
+                return "" + value.booleanValue();
+        }
+        return value.stringValue();
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
