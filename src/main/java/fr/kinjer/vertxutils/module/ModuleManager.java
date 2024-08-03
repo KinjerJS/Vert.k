@@ -90,8 +90,9 @@ public class ModuleManager<M> {
     }
 
     private boolean hasPermission(Method met, HttpServerRequest request) {
-        RequestPermission requestPermission = met.getAnnotation(RequestPermission.class);
-        return requestPermission == null || this.server.getPermission(requestPermission.value()).isAuthorized(request);
+        RequestPermission permission = met.getAnnotation(RequestPermission.class);
+        return this.server.getDefaultPermission().isAuthorized(request) &&
+                (permission == null || this.server.getPermission(permission.value()).isAuthorized(request));
     }
 
     public static boolean isSubRequest(Method met, String subRequest, MethodHttp method) {

@@ -1,6 +1,7 @@
 package fr.kinjer.vertxutils;
 
 import fr.kinjer.vertxutils.module.ModuleManager;
+import fr.kinjer.vertxutils.module.request.DefaultPermission;
 import fr.kinjer.vertxutils.module.request.IRequestPermission;
 import fr.kinjer.vertxutils.server.DefaultVerticle;
 import io.vertx.core.Verticle;
@@ -9,13 +10,13 @@ import io.vertx.core.Vertx;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VertxServer<M> {
+public class VertxServer<Module> {
 
     private final int port;
     protected final String apiPath;
     protected final Vertx vertx;
 
-    private final ModuleManager<M> moduleManager;
+    private final ModuleManager<Module> moduleManager;
     private final List<IRequestPermission> requestPermissions = new ArrayList<>();
 
     public VertxServer(int port, String apiPath) {
@@ -26,30 +27,30 @@ public class VertxServer<M> {
         this.moduleManager = new ModuleManager<>(this);
     }
 
-    public VertxServer<M> deployVerticle(Verticle verticle) {
+    public VertxServer<Module> deployVerticle(Verticle verticle) {
         this.vertx.deployVerticle(verticle);
         return this;
     }
 
-    public VertxServer<M> addPermission(IRequestPermission permission) {
+    public VertxServer<Module> addPermission(IRequestPermission permission) {
         this.requestPermissions.add(permission);
         return this;
     }
 
-    public VertxServer<M> deployDefaultVerticle() {
+    public VertxServer<Module> deployDefaultVerticle() {
         return this.deployVerticle(new DefaultVerticle<>(this));
     }
 
-    public ModuleManager<M> getModuleManager() {
+    public ModuleManager<Module> getModuleManager() {
         return moduleManager;
     }
 
     @SuppressWarnings("unchecked")
-    public void addModules(M... module) {
+    public void addModules(Module... module) {
         this.moduleManager.addModules(module);
     }
 
-    public void addModule(M module) {
+    public void addModule(Module module) {
         this.moduleManager.addModule(module);
     }
 
@@ -68,5 +69,18 @@ public class VertxServer<M> {
     public IRequestPermission getPermission(String value) {
         return this.requestPermissions.stream().filter(permission -> permission.getName().equals(value))
                 .findFirst().orElse(null);
+    }
+
+    /**
+     * Get the default permission.<br>
+     * The default permission is the permission with the name "default".<br>
+     * If no default permission is found, return a new {@link DefaultPermission}.<br>
+     * It will always be verified before any other permission.
+     *
+     * @return the default permission
+     */
+    public IRequestPermission getDefaultPermission() {
+        return this.requestPermissions.stream().filter(permission -> permission.getName().equals("default"))
+                .findFirst().orElse(new DefaultPermission());
     }
 }
