@@ -1,4 +1,4 @@
-package fr.kinjer.vertxutils.utils;
+package fr.kinjer.vertk.utils;
 
 import io.vertx.core.VertxException;
 

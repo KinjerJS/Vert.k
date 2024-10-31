@@ -1,8 +1,8 @@
 package modules;
 
-import fr.kinjer.vertxutils.module.request.ModuleRequest;
-import fr.kinjer.vertxutils.module.request.Request;
-import fr.kinjer.vertxutils.module.request.SubRequest;
+import fr.kinjer.vertk.module.request.ModuleRequest;
+import fr.kinjer.vertk.module.request.Request;
+import fr.kinjer.vertk.module.request.SubRequest;
 
 @ModuleRequest({TestModule.PATH, "auqsdtre"})
 public class SubTestModule {

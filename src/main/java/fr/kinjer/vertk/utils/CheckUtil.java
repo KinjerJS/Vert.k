@@ -1,10 +1,4 @@
-package fr.kinjer.vertxutils.utils;
-
-import fr.kinjer.vertxutils.module.request.Request;
-import fr.kinjer.vertxutils.module.request.Response;
-
-import java.util.HashSet;
-import java.util.Set;
+package fr.kinjer.vertk.utils;
 
 public class CheckUtil {
 //    public static void checkDuplicateSubRequest(Request<Response> request) {

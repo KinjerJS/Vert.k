@@ -1,13 +1,13 @@
-package fr.kinjer.vertxutils.server;
+package fr.kinjer.vertk.verticle;
 
-import fr.kinjer.vertxutils.VertxServer;
-import fr.kinjer.vertxutils.module.request.*;
-import fr.kinjer.vertxutils.module.request.value.ParamValue;
-import fr.kinjer.vertxutils.request.MethodHttp;
-import fr.kinjer.vertxutils.utils.ConvertorPrimitive;
-import fr.kinjer.vertxutils.utils.ErrorUtil;
-import fr.kinjer.vertxutils.utils.HttpVertxException;
-import fr.kinjer.vertxutils.utils.Pair;
+import fr.kinjer.vertk.VertkServer;
+import fr.kinjer.vertk.module.request.*;
+import fr.kinjer.vertk.module.request.value.ParamValue;
+import fr.kinjer.vertk.request.MethodHttp;
+import fr.kinjer.vertk.utils.ConvertorPrimitive;
+import fr.kinjer.vertk.utils.ErrorUtil;
+import fr.kinjer.vertk.utils.HttpVertxException;
+import fr.kinjer.vertk.utils.Pair;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
@@ -23,20 +23,20 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> extends AbstractVerticle {
+public class DefaultVerticle<S extends VertkServer<O>, O, R extends Response> extends AbstractVerticle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultVerticle.class);
 
-    protected final T vertxServer;
+    protected final S vertxServer;
 
-    public DefaultVerticle(T vertxServer) {
+    public DefaultVerticle(S vertxServer) {
         this.vertxServer = vertxServer;
     }
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        LOGGER.info("Starting verticle on port " + this.vertxServer.getServerPort()
-                + " (http://localhost:" + this.vertxServer.getServerPort() + this.vertxServer.getApiPath() + ")");
+        LOGGER.info("Starting verticle on port {} (http://localhost:{}{})",
+                this.vertxServer.getServerPort(), this.vertxServer.getServerPort(), this.vertxServer.getApiPath());
 
         HttpServer server = this.vertx.createHttpServer();
 
@@ -55,7 +55,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
     protected void preInit(HttpServer server) {}
 
     protected void requestHandler(HttpServerRequest request) {
-        LOGGER.debug("Request detected.");
+        LOGGER.debug("[Request] ({}) <-", request.path());
         String[] paths = (request.path().startsWith(this.vertxServer.getApiPath())
                 ? request.path().substring(this.vertxServer.getApiPath().length())
                 : "").split("/");
@@ -67,7 +67,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 this.executeRequest(request, requestModule.getKey(), requestModule.getValue());
                 return;
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("[Request] A wtf error occurred : {}", e.getMessage(), e);
                 request.response().setStatusCode(500).end(ErrorUtil.e("An error occurred"));
                 return;
             }
@@ -81,6 +81,7 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
             try {
                 String result = methodRequest.invoke(requestModule, this.getBindValues(methodRequest, request, buffer))
                         .toString();
+                LOGGER.debug("[Response] ({}) -> {}", request.path(), result);
                 request.response().setStatusCode(200).end(result);
             } catch (InvocationTargetException | IllegalAccessException e) {
                 try {
@@ -89,10 +90,10 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                     int code = ex.getCode();
                     request.response().setStatusCode(code).end(ErrorUtil.e(ex.getMessage()));
                 } catch (ClassCastException | NumberFormatException ex) {
-                    ex.printStackTrace();
+                    LOGGER.error("[Request] Bad type : {}", e.getMessage(), e);
                     request.response().setStatusCode(400).end(ErrorUtil.e("BAD_TYPE"));
                 } catch (Throwable ex) {
-                    ex.printStackTrace();
+                    LOGGER.error("[Request] An error occurred : {}", e.getMessage(), e);
                     request.response().setStatusCode(500).end(ErrorUtil.e("An error occurred"));
                 }
             }
@@ -113,28 +114,25 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 params.add(valueTypeClass);
                 continue;
             }
-            Pair<String, ParamValue> param = this.filterParam(parameterType, MethodHttp.fromHttpMethod(request.method()), buffer, request.params());
-            params.add(ConvertorPrimitive.convert(classType, param.getKey() != null ? param.getKey() : this.getParamValue(param.getValue())));
+            Pair<String, ParamValue> param = this.filterParam(parameterType,
+                    MethodHttp.fromHttpMethod(request.method()), buffer, request.params());
+            params.add(
+                    ConvertorPrimitive.convert(classType,
+                            param.getKey() != null ? param.getKey() : this.getParamValue(param.getValue()))
+            );
         }
         return params.toArray();
     }
 
     private String getParamValue(ParamValue value) {
-        if (value == null)
-            return null;
-        switch (value.typeValue()) {
-            case INTEGER:
-                return "" + value.intValue();
-            case LONG:
-                return "" + value.longValue();
-            case FLOAT:
-                return "" + value.floatValue();
-            case DOUBLE:
-                return "" + value.doubleValue();
-            case BOOLEAN:
-                return "" + value.booleanValue();
-        }
-        return value.stringValue();
+        return value != null ? "" + switch (value.typeValue()) {
+            case INTEGER -> value.intValue();
+            case LONG -> value.longValue();
+            case FLOAT -> value.floatValue();
+            case DOUBLE -> value.doubleValue();
+            case BOOLEAN -> value.booleanValue();
+            default -> value.stringValue();
+        } : null;
     }
 
     private Object getTypedValue(Class<?> classType, HttpServerRequest request, Buffer buffer) {
@@ -182,80 +180,6 @@ public class DefaultVerticle<T extends VertxServer<O>, O, R extends Response> ex
                 ? paramAKey.value() : parameterType.getName();
         return new Pair<>(param.get(paramKey), paramAKey != null ? paramAKey.defaultValue() : null);
     }
-
-//    private void checkRequest(String[] paths, R requestModule, HttpServerRequest httpServerRequest, Re response) {
-//        if (paths.length == 1) {
-//            try {
-//                if(!httpServerRequest.response().ended()) {
-//                    if(requestModule.isAuthorized(response)) {
-//                        httpServerRequest.response().setStatusCode(200).end(this.onRequest(response, requestModule));
-//                        return;
-//                    }
-//                    httpServerRequest.response().setStatusCode(401).end(ErrorUtil.e401("Unauthorized"));
-//                }
-//            }catch (HttpVertxException e) {
-//                int code = e.getCode();
-//
-//                if(!httpServerRequest.response().ended()) {
-//                    httpServerRequest.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            return;
-//        }
-//        R request = requestModule.getSubRequest(paths[1]);
-//        R subRequest = this.getSubRequest(request, Arrays.copyOfRange(paths, 2, paths.length));
-//
-//        if (subRequest == null) {
-//            if(!httpServerRequest.response().ended()) {
-//                httpServerRequest.response().setStatusCode(404).end(ErrorUtil.e404("Path not found"));
-//            }
-//            return;
-//        }
-//        try {
-//            if(!subRequest.isAuthorized(response)) {
-//                if(!httpServerRequest.response().ended()) {
-//                    httpServerRequest.response().setStatusCode(401).end(ErrorUtil.e401("Unauthorized"));
-//                }
-//                return;
-//            }
-//            if(!httpServerRequest.response().ended()) {
-//                httpServerRequest.response().setStatusCode(200).end(this.onRequest(response, subRequest));
-//            }
-//        } catch (HttpVertxException e) {
-//            int code = e.getCode();
-//
-//            if(!httpServerRequest.response().ended()) {
-//                httpServerRequest.response().setStatusCode(code).end(ErrorUtil.e(code, e.getMessage()));
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            if(!httpServerRequest.response().ended()) {
-//                httpServerRequest.response().setStatusCode(500).end(ErrorUtil.e500("An error occurred"));
-//            }
-//        }
-//    }
-//
-//    private String onRequest(Re response, R request) throws Exception {
-//
-//        return request.onRequest(response);
-//    }
-
-//    private R getSubRequest(R request, String[] paths) {
-//        if(request == null) {
-//            return null;
-//        }
-//        if (paths.length == 0) {
-//            return request;
-//        }
-//        for (R subRequest : request.<R>getSubRequests()) {
-//            if (subRequest.getPath().equals(paths[0])) {
-//                return getSubRequest(subRequest, Arrays.copyOfRange(paths, 1, paths.length));
-//            }
-//        }
-//        return null;
-//    }
 
     @Override
     public void stop(Promise<Void> stopPromise) throws Exception {

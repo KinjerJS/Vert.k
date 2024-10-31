@@ -1,4 +1,4 @@
-package fr.kinjer.vertxutils.module.request;
+package fr.kinjer.vertk.module.request;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

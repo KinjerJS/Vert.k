@@ -1,4 +1,4 @@
-package fr.kinjer.vertxutils.utils;
+package fr.kinjer.vertk.utils;
 
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;

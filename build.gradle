@@ -2,63 +2,61 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.0"
 }
 
-allprojects {
-    apply plugin: 'idea'
-    apply plugin: 'java-library'
-    apply plugin: 'maven-publish'
+apply plugin: 'idea'
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
 
-    group 'fr.kinjer.vertxutils'
-    version '2.0.0-beta.14'
-    [compileJava, compileTestJava]*.options*.compilerArgs = ['-parameters']
+group 'fr.kinjer.vertk'
+version '2.0.0-rc1'
+[compileJava, compileTestJava]*.options*.compilerArgs = ['-parameters']
 
-    publishing {
-        publications {
-            mavenJava(org.gradle.api.publish.maven.MavenPublication) {
-                from components.java
+publishing {
+    publications {
+        mavenJava(org.gradle.api.publish.maven.MavenPublication) {
+            from components.java
 
-                pom {
-                    groupId = project.group
-                    artifactId = 'vert.k'
-                    version = project.version
-                    name = 'Vert.k'
-                    url = 'https://maven.pkg.github.com/KinjerJS/Vert.k'
-                }
+            pom {
+                groupId = project.group
+                artifactId = 'vert.k'
+                version = project.version
+                name = 'Vert.k'
+                url = 'https://maven.pkg.github.com/KinjerJS/Vert.k'
             }
         }
-
-        repositories {
-            maven {
-                credentials {
-                    username System.getenv('GITHUB_USERNAME')
-                    password System.getenv('GITHUB_TOKEN')
-                }
-                name = "Vert.k_maven"
-                url = "https://maven.pkg.github.com/KinjerJS/Vert.k"
-            }
-        }
-    }
-
-    java {
-        withSourcesJar()
-        withJavadocJar()
-
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(8)
-        }
-    }
-
-    compileJava {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        options.encoding = 'UTF-8'
     }
 
     repositories {
-        mavenCentral()
+        maven {
+            credentials {
+                username System.getenv('GITHUB_USERNAME')
+                password System.getenv('GITHUB_TOKEN')
+            }
+            name = "Vert.k_maven"
+            url = "https://maven.pkg.github.com/KinjerJS/Vert.k"
+        }
     }
+}
 
-    dependencies {
-        api 'io.vertx:vertx-web:4.5.0'
-        implementation 'org.slf4j:slf4j-api:2.0.13'
-        implementation 'org.slf4j:slf4j-log4j12:2.0.13'
+java {
+    withSourcesJar()
+    withJavadocJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
     }
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_17
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'io.vertx:vertx-web:4.5.0'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
+    implementation 'org.slf4j:slf4j-log4j12:2.0.13'
 }

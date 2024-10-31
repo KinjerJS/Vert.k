@@ -1,6 +1,6 @@
 package modules;
 
-import fr.kinjer.vertxutils.module.request.*;
+import fr.kinjer.vertk.module.request.*;
 
 @ModuleRequest(TestModule.PATH)
 public class TestModule {

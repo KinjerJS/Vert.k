@@ -1,6 +1,6 @@
-package fr.kinjer.vertxutils.module.request;
+package fr.kinjer.vertk.module.request;
 
-import fr.kinjer.vertxutils.module.request.value.ParamValue;
+import fr.kinjer.vertk.module.request.value.ParamValue;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,14 +9,10 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-public @interface Body {
+public @interface Param {
 
-    /**
-     * The real key name get from a body in jso
-     * @return
-     */
     String value() default "";
 
-    ParamValue defaultValue();
+    ParamValue defaultValue() default @ParamValue(typeValue = ParamValue.Type.NONE);
 
 }

@@ -1,4 +1,4 @@
-package fr.kinjer.vertxutils.request;
+package fr.kinjer.vertk.request;
 
 import io.vertx.core.http.HttpMethod;
 

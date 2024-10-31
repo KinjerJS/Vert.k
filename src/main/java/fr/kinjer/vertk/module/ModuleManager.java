@@ -1,9 +1,9 @@
-package fr.kinjer.vertxutils.module;
+package fr.kinjer.vertk.module;
 
-import fr.kinjer.vertxutils.VertxServer;
-import fr.kinjer.vertxutils.module.request.*;
-import fr.kinjer.vertxutils.request.MethodHttp;
-import fr.kinjer.vertxutils.utils.Pair;
+import fr.kinjer.vertk.VertkServer;
+import fr.kinjer.vertk.module.request.*;
+import fr.kinjer.vertk.request.MethodHttp;
+import fr.kinjer.vertk.utils.Pair;
 import io.vertx.core.http.HttpServerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +18,9 @@ public class ModuleManager<M> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModuleManager.class);
 
     private final List<M> modules = new ArrayList<>();
-    private final VertxServer<M> server;
+    private final VertkServer<M> server;
 
-    public ModuleManager(VertxServer<M> server) {
+    public ModuleManager(VertkServer<M> server) {
         this.server = server;
     }
 
@@ -48,8 +48,7 @@ public class ModuleManager<M> {
             ModuleRequest moduleRequest = classModule.getAnnotation(ModuleRequest.class);
             if (moduleRequest == null) continue;
             String[] modulePath = this.checkModulePath(moduleRequest);
-            LOGGER.debug("modulePath: " + Arrays.toString(modulePath));
-            LOGGER.debug("modulePath: " + Arrays.toString(paths));
+            LOGGER.trace("modulePath: {}::{}", Arrays.toString(modulePath), Arrays.toString(paths));
             int i;
             for (i = 0; i < modulePath.length; i++) {
                 if (!modulePath[i].equals(paths[i]))
@@ -58,7 +57,7 @@ public class ModuleManager<M> {
                     if (!Arrays.equals(modulePath, paths))
                         break;
                     Method met = getRequestMethod(classModule, request, methodHttp);
-                    LOGGER.debug(met + "");
+                    LOGGER.debug("{}", met);
                     if (met != null)
                         return new Pair<>(module, met);
                     break;

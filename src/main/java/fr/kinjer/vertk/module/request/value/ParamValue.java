@@ -1,4 +1,4 @@
-package fr.kinjer.vertxutils.module.request.value;
+package fr.kinjer.vertk.module.request.value;
 
 public @interface ParamValue {
 
